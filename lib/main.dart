@@ -1,6 +1,7 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(MyApp());
@@ -52,13 +53,28 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var selectedIndex = 0;
+  var _appVersion = '';
+
+  Future<void> getAppVersion() async {
+    String appVersion;
+    try {
+      appVersion = await AppInfo.appVersion ?? 'Unknown App version';
+    } on PlatformException {
+      appVersion = 'Failed app version';
+    }
+    debugPrint('App version: $_appVersion');
+    setState(() {
+      _appVersion = appVersion;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     Widget page;
     switch (selectedIndex) {
       case 0:
-        page = GeneratorPage();
+        page = GeneratorPage(
+            getAppVersion: getAppVersion, appVersion: _appVersion);
         break;
       case 1:
         page = FavoritesPage();
@@ -106,6 +122,11 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class GeneratorPage extends StatelessWidget {
+  GeneratorPage(
+      {super.key, required this.getAppVersion, required this.appVersion});
+  late final Function getAppVersion;
+  final String appVersion;
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -140,6 +161,13 @@ class GeneratorPage extends StatelessWidget {
                   appState.getNext();
                 },
                 child: Text('Next'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  getAppVersion();
+                },
+                child: Text(appVersion.toString()),
               ),
             ],
           )
@@ -204,5 +232,14 @@ class FavoritesPage extends StatelessWidget {
           )
       ],
     );
+  }
+}
+
+class AppInfo {
+  static const MethodChannel _channel = MethodChannel('appInfo');
+
+  static Future<String?> get appVersion async {
+    final String? version = await _channel.invokeMethod('getAppVersion');
+    return version;
   }
 }
