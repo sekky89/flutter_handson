@@ -62,7 +62,6 @@ class _MyHomePageState extends State<MyHomePage> {
     } on PlatformException {
       appVersion = 'Failed app version';
     }
-    debugPrint('App version: $_appVersion');
     setState(() {
       _appVersion = appVersion;
     });
