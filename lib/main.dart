@@ -2,10 +2,9 @@ import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-void main() {
-  runApp(MyApp());
-}
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -161,12 +160,25 @@ class GeneratorPage extends StatelessWidget {
                 },
                 child: Text('Next'),
               ),
-              SizedBox(width: 10),
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               ElevatedButton(
                 onPressed: () {
                   getAppVersion();
                 },
                 child: Text(appVersion.toString()),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  var url = Uri.parse(
+                      'https://www.google.com/maps/search/?api=1&query=%E3%81%B2%E3%81%B0%E3%82%8A%E3%83%B6%E4%B8%98');
+                  launchUrl(url, mode: LaunchMode.inAppWebView);
+                },
+                child: Text('map'),
               ),
             ],
           )
