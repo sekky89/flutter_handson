@@ -14,12 +14,8 @@ void main() => runApp(MyApp());
 
 final routes = GoRouter(
   initialLocation: '/',
+  debugLogDiagnostics: true,
   navigatorKey: _rootNavigatorKey,
-  // routes: [
-  //   GoRoute(path: '/', builder: (context, state) => MyHomePage(), routes: [
-  //     GoRoute(path: 'favorites', builder: (context, state) => FavoritesPage())
-  //   ]),
-  // ],
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
@@ -64,7 +60,6 @@ final routes = GoRouter(
   ],
 );
 
-// 共通
 class ScaffoldWithNestedNavigation extends StatelessWidget {
   const ScaffoldWithNestedNavigation({required this.navigationShell, Key? key})
       : super(key: key);
@@ -164,17 +159,13 @@ class GeneratorPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ElevatedButton.icon(
-                onPressed: () {
-                  appState.toggleFavorite();
-                },
+                onPressed: () => appState.toggleFavorite(),
                 icon: Icon(icon),
                 label: Text('Like'),
               ),
               SizedBox(width: 10),
               ElevatedButton(
-                onPressed: () {
-                  appState.getNext();
-                },
+                onPressed: () => appState.getNext(),
                 child: Text('Next'),
               ),
             ],
@@ -183,9 +174,7 @@ class GeneratorPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ElevatedButton(
-                onPressed: () {
-                  appState.getAppVersion();
-                },
+                onPressed: () => appState.getAppVersion(),
                 child: Text(appState.appVersion),
               ),
               SizedBox(width: 10),
