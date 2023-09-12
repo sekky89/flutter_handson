@@ -1,10 +1,93 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// private navigators
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorAKey = GlobalKey<NavigatorState>(debugLabel: 'shellA');
+final _shellNavigatorBKey = GlobalKey<NavigatorState>(debugLabel: 'shellB');
+
 void main() => runApp(MyApp());
+
+final routes = GoRouter(
+  initialLocation: '/',
+  navigatorKey: _rootNavigatorKey,
+  // routes: [
+  //   GoRoute(path: '/', builder: (context, state) => MyHomePage(), routes: [
+  //     GoRoute(path: 'favorites', builder: (context, state) => FavoritesPage())
+  //   ]),
+  // ],
+  routes: [
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) =>
+          ScaffoldWithNestedNavigation(navigationShell: navigationShell),
+      branches: [
+        StatefulShellBranch(
+          navigatorKey: _shellNavigatorAKey,
+          routes: [
+            GoRoute(
+              path: '/',
+              pageBuilder: (context, state) =>
+                  NoTransitionPage(child: GeneratorPage()),
+              // routes: [
+              //   GoRoute(
+              //     path: 'favorites',
+              //     pageBuilder: (context, state) =>
+              //         NoTransitionPage(child: FavoritesPage()),
+              //   ),
+              // ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: _shellNavigatorBKey,
+          routes: [
+            GoRoute(
+              path: '/favorites',
+              pageBuilder: (context, state) =>
+                  NoTransitionPage(child: FavoritesPage()),
+              // routes: [
+              //   GoRoute(
+              //     path: 'favorites',
+              //     pageBuilder: (context, state) =>
+              //         NoTransitionPage(child: FavoritesPage()),
+              //   ),
+              // ],
+            ),
+          ],
+        ),
+      ],
+    ),
+  ],
+);
+
+// 共通
+class ScaffoldWithNestedNavigation extends StatelessWidget {
+  const ScaffoldWithNestedNavigation({required this.navigationShell, Key? key})
+      : super(key: key);
+  final StatefulNavigationShell navigationShell;
+
+  void _goBranch(int index) => navigationShell.goBranch(index,
+      initialLocation: index == navigationShell.currentIndex);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: navigationShell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: navigationShell.currentIndex,
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.favorite), label: 'Favorites'),
+        ],
+        onDestinationSelected: _goBranch,
+      ),
+    );
+  }
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -13,13 +96,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(),
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Flutter Demo',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
           useMaterial3: true,
         ),
-        home: MyHomePage(),
+        routerConfig: routes,
       ),
     );
   }
@@ -43,87 +126,21 @@ class MyAppState extends ChangeNotifier {
     }
     notifyListeners();
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  var selectedIndex = 0;
-  var _appVersion = '';
+  var appVersion = 'version';
 
   Future<void> getAppVersion() async {
-    String appVersion;
     try {
       appVersion = await AppInfo.appVersion ?? 'Unknown App version';
     } on PlatformException {
       appVersion = 'Failed app version';
     }
-    setState(() {
-      _appVersion = appVersion;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Widget page;
-    switch (selectedIndex) {
-      case 0:
-        page = GeneratorPage(
-            getAppVersion: getAppVersion, appVersion: _appVersion);
-        break;
-      case 1:
-        page = FavoritesPage();
-        break;
-      default:
-        throw UnimplementedError('no widget for $selectedIndex');
-    }
-
-    return LayoutBuilder(builder: (context, constraints) {
-      return Scaffold(
-        body: Row(
-          children: [
-            SafeArea(
-              child: NavigationRail(
-                extended: constraints.maxWidth >= 600,
-                destinations: [
-                  NavigationRailDestination(
-                    icon: Icon(Icons.home),
-                    label: Text('Home'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.favorite),
-                    label: Text('Favorites'),
-                  ),
-                ],
-                selectedIndex: selectedIndex,
-                onDestinationSelected: (value) {
-                  setState(() {
-                    selectedIndex = value;
-                  });
-                },
-              ),
-            ),
-            Expanded(
-              child: Container(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                child: page,
-              ),
-            )
-          ],
-        ),
-      );
-    });
+    notifyListeners();
   }
 }
 
 class GeneratorPage extends StatelessWidget {
-  GeneratorPage(
-      {super.key, required this.getAppVersion, required this.appVersion});
-  late final Function getAppVersion;
-  final String appVersion;
+  GeneratorPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -167,9 +184,9 @@ class GeneratorPage extends StatelessWidget {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  getAppVersion();
+                  appState.getAppVersion();
                 },
-                child: Text(appVersion.toString()),
+                child: Text(appState.appVersion),
               ),
               SizedBox(width: 10),
               ElevatedButton(
