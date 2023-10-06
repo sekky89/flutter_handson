@@ -1,16 +1,31 @@
 import 'package:english_words/english_words.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 // private navigators
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorAKey = GlobalKey<NavigatorState>(debugLabel: 'shellA');
 final _shellNavigatorBKey = GlobalKey<NavigatorState>(debugLabel: 'shellB');
 
-void main() => runApp(MyApp());
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print("バックグラウンドでメッセージを受け取りました");
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  runApp(MyApp());
+}
 
 final routes = GoRouter(
   initialLocation: '/',
@@ -104,6 +119,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyAppState extends ChangeNotifier {
+  final messaging = FirebaseMessaging.instance;
   var current = WordPair.random();
 
   void getNext() {
@@ -131,6 +147,20 @@ class MyAppState extends ChangeNotifier {
       appVersion = 'Failed app version';
     }
     notifyListeners();
+  }
+
+  void getDeviceToken() async {
+    String? token = await messaging.getToken();
+    messaging.requestPermission(
+      alert: true,
+      announcement: true,
+      badge: true,
+      carPlay: true,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+    print('token: $token');
   }
 }
 
@@ -186,6 +216,14 @@ class GeneratorPage extends StatelessWidget {
                 },
                 child: Text('map'),
               ),
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                  onPressed: () => appState.getDeviceToken(),
+                  child: Text('getDeviceToken'))
             ],
           )
         ],
